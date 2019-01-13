@@ -1,4 +1,6 @@
 const {app,BrowserWindow} = require("electron")
+const {VoxReader,VoxMerge,VoxExport} = require("./voxtool")
+
 let win;
 
 function createWindow(){

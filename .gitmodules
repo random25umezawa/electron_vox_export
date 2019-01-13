@@ -1,0 +1,3 @@
+[submodule "voxtool"]
+	path = voxtool
+	url = https://github.com/random25umezawa/vox_new.git
