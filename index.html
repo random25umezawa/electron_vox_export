@@ -3,11 +3,65 @@
   <head>
     <meta charset="UTF-8">
     <title>Hello World!</title>
+    <script>
+      const {remote,ipcRenderer} = require("electron")
+      const {BrowserWindow,dialog} = remote;
+      ipcRenderer.on("send",(e,arg)=>{
+        console.log(arg)
+      })
+      ipcRenderer.send("get","we--i")
+    </script>
   </head>
   <body>
     <h1>Hello World!</h1>
     We are using node <script>document.write(process.versions.node)</script>,
     Chrome <script>document.write(process.versions.chrome)</script>,
     and Electron <script>document.write(process.versions.electron)</script>.
+
+    <div id="area"></div>
+    <div id="image_area"></div>
+    <script>
+      let image_area = document.querySelector("#image_area")
+      let area = document.querySelector("#area")
+      let input = document.createElement("input");
+      let button = document.createElement("button");
+      button.innerText = "we---i"
+      button.onclick = function() {
+        let val = input.value;
+        ipcRenderer.send("get",val);
+      }
+      let file_input = document.createElement("input");
+      file_input.type="file"
+      file_input.onchange = function(e) {
+        if(timer) clearTimeout(timer)
+        ipcRenderer.send("setFile",e.target.files[0].path);
+      }
+      area.appendChild(input)
+      area.appendChild(button)
+      area.appendChild(file_input)
+
+      let timer;
+
+      ipcRenderer.on("setFileComplete",(e,arg)=>{
+        image_area.innerHTML = "";
+        let r_count = 0;
+        let img = document.createElement("img");
+        let time = +new Date();
+        if(timer) clearTimeout(timer)
+        timer = setInterval(
+          _=>{img.src=`./temp_export/${`${(r_count++)%arg}`.padStart(3,"0")}.png?${time}`}
+          ,125
+        )
+        image_area.appendChild(img);
+        /*
+        image_area.appendChild(img);
+        for(let i = 0; i < arg; i++) {
+          let img = document.createElement("img");
+          img.src=`./temp_export/${`${i}`.padStart(3,"0")}.png`
+          image_area.appendChild(img);
+        }
+        */
+      })
+    </script>
   </body>
 </html>
