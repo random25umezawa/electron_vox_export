@@ -13,10 +13,7 @@
     </script>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    We are using node <script>document.write(process.versions.node)</script>,
-    Chrome <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
+
 
     <div id="area"></div>
     <div id="image_area"></div>
@@ -45,22 +42,26 @@
       ipcRenderer.on("setFileComplete",(e,arg)=>{
         image_area.innerHTML = "";
         let r_count = 0;
-        let img = document.createElement("img");
         let time = +new Date();
         if(timer) clearTimeout(timer)
+
+        //cache
+        let images = [...Array(arg).keys()].map(index=>{
+          let img = document.createElement("img");
+          img.src=`./temp_export/${`${index}`.padStart(3,"0")}.png?${time}`;
+          img.style.display = "none";
+          return img;
+        })
+        for(let img of images) image_area.appendChild(img);
+
+        let img = document.createElement("img");
         timer = setInterval(
-          _=>{img.src=`./temp_export/${`${(r_count++)%arg}`.padStart(3,"0")}.png?${time}`}
+          _=>{
+            img.src=`./temp_export/${`${((r_count++)%arg)}`.padStart(3,"0")}.png?${time}`;
+          }
           ,125
         )
         image_area.appendChild(img);
-        /*
-        image_area.appendChild(img);
-        for(let i = 0; i < arg; i++) {
-          let img = document.createElement("img");
-          img.src=`./temp_export/${`${i}`.padStart(3,"0")}.png`
-          image_area.appendChild(img);
-        }
-        */
       })
     </script>
   </body>
