@@ -11,35 +11,92 @@
       })
       ipcRenderer.send("get","we--i")
     </script>
+    <style>
+      #root{
+        display:flex;
+      }
+      #left_box{
+        flex-basis: 120px;
+        flex-shrink: 0;
+      }
+      #center_box{
+        flex-basis: auto;
+        flex-grow: 1;
+      }
+      #right_box{
+        flex-basis: 240px;
+        flex-shrink: 0;
+      }
+      #palette_area{
+        display:flex;
+        flex-wrap:wrap;
+        width: 120px;
+      }
+      .palette_div{
+        width: 13px;
+        height: 10px;
+        background-color: blue;
+        border: solid 1px black;
+      }
+      #file_preview_img{
+        width: 100%;
+        object-fit: contain;
+      }
+      .tree_element{
+        padding-left: 12px;
+      }
+      #rotate_img{
+        width: auto;
+        max-width: 100%;
+        object-fit: contain;
+      }
+    </style>
   </head>
   <body>
 
 
-    <div id="area"></div>
-    <div id="image_area"></div>
+    <div id="root">
+      <div id="left_box">
+        <div id="palette_area">
+        </div>
+      </div>
+      <div id="center_box">
+        <div id="image_area">
+        </div>
+        <img id="rotate_img">
+      </div>
+      <div id="right_box">
+        <div id="area">
+          <input type="file" id="file_input"><br/>
+          <div id="rotate_tools" style="display:none"><input id="rotate_count" value="16"><input type="button" value="回転生成" id="create_rotate"></div>
+          <img id="file_preview_img"><br/>
+          <div id="tree_area">
+          </div>
+        </div>
+      </div>
+    </div>
     <script>
       let image_area = document.querySelector("#image_area")
       let area = document.querySelector("#area")
-      let input = document.createElement("input");
-      let button = document.createElement("button");
-      button.innerText = "we---i"
-      button.onclick = function() {
-        let val = input.value;
-        ipcRenderer.send("get",val);
-      }
-      let file_input = document.createElement("input");
-      file_input.type="file"
+
+      let file_input = document.querySelector("#file_input");
       file_input.onchange = function(e) {
         if(timer) clearTimeout(timer)
         ipcRenderer.send("setFile",e.target.files[0].path);
       }
-      area.appendChild(input)
-      area.appendChild(button)
-      area.appendChild(file_input)
 
+      let rotate_count = document.querySelector("#rotate_count");
+      let create_rotate = document.querySelector("#create_rotate");
       let timer;
-
-      ipcRenderer.on("setFileComplete",(e,arg)=>{
+      create_rotate.onclick = ()=>{
+        let rot_count = parseInt(rotate_count.value);
+        if(!(rot_count>1)) {
+          alert("yukonataiwoiretekudasai")
+          return;
+        }
+        ipcRenderer.send("createRotate",rot_count);
+      }
+      ipcRenderer.on("createRotateComplete",(e,arg)=>{
         image_area.innerHTML = "";
         let r_count = 0;
         let time = +new Date();
@@ -54,14 +111,57 @@
         })
         for(let img of images) image_area.appendChild(img);
 
-        let img = document.createElement("img");
+        let img = document.querySelector("#rotate_img");
         timer = setInterval(
           _=>{
             img.src=`./temp_export/${`${((r_count++)%arg)}`.padStart(3,"0")}.png?${time}`;
           }
           ,125
         )
-        image_area.appendChild(img);
+      })
+
+      ipcRenderer.on("setFileComplete",(e,arg)=>{
+        console.log(arg);
+        const {palette,tree} = arg;
+
+        // パレット
+        let palette_area = document.querySelector("#palette_area");
+        palette_area.innerHTML = "";
+        for(let palette_idx = 0; palette_idx < 256; palette_idx++) {
+          let i = (palette_idx+1)%256;
+          let palette_div = document.createElement("div");
+          palette_div.classList.add("palette_div");
+          palette_div.style.backgroundColor = `rgba(${(palette[i]>>>24)&0xff},${(palette[i]>>>16)&0xff},${(palette[i]>>>8)&0xff},${((palette[i]>>>0)&0xff)/255.0})`;
+          palette_area.append(palette_div);
+        }
+
+        // 正面画像
+        let file_preview_img = document.querySelector("#file_preview_img")
+        file_preview_img.src = "./temp_export/000.png?"+(+new Date())
+
+        // ツリー
+        let tree_area = document.querySelector("#tree_area")
+        tree_area.innerHTML = "";
+        let _create_tree = (_element, _tree) => {
+          let label = document.createElement("div");
+          label.innerText = `${_tree.chunk.node_id} : ${_tree.chunk.name}`;
+          _element.appendChild(label);
+          if(tree.children.length>0) {
+            let _div = document.createElement("div")
+            _div.classList.add("tree_element");
+            for(let _child of _tree.children) {
+              _create_tree(_div,_child);
+            }
+            _element.appendChild(_div);
+          }
+        }
+        _create_tree(tree_area,tree);
+
+        document.querySelector("#rotate_tools").style.display = "block";
+      })
+
+      ipcRenderer.on("getConfigComplete",(e,arg)=>{
+        console.log(arg);
       })
     </script>
   </body>
